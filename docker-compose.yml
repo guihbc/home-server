@@ -1,5 +1,29 @@
-version: '3.9'
 services:
+  traefik:
+    image: "traefik:v2.11"
+    container_name: "traefik"
+    command:
+      - "--log.level=DEBUG"
+      - "--api.debug=true"
+      - "--providers.docker=true"
+      - "--providers.docker.network=traefik_server_apps"
+      - "--entrypoints.web.address=:80"
+      - "--api.insecure=true"
+      - '--providers.docker.exposedbydefault=false'
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    depends_on:
+      - pihole
+    networks:
+      - traefik_server_apps
+    labels:
+      - 'traefik.docker.network=traefik_server_apps'
+      - 'traefik.http.routers.traefik.rule=PathPrefix(`/traefik`)'
+      - 'traefik.http.routers.traefik.service=api@internal'
+      - 'traefik.http.middlewares.traefik.entrypoints=web'
 
   pihole:
     image: pihole/pihole:latest
@@ -28,32 +52,6 @@ services:
       - 'traefik.http.middlewares.pihole.stripprefix.prefixes=/pihole'
       - 'traefik.http.routers.pihole.middlewares=pihole'
     restart: unless-stopped
-
-  traefik:
-    image: "traefik:v2.11"
-    container_name: "traefik"
-    command:
-      - "--log.level=DEBUG"
-      - "--api.debug=true"
-      - "--providers.docker=true"
-      - "--providers.docker.network=traefik_server_apps"
-      - "--entrypoints.web.address=:80"
-      - "--api.insecure=true"
-      - '--providers.docker.exposedbydefault=false'
-    ports:
-      - "80:80"
-      - "8080:8080"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    depends_on:
-      - pihole
-    networks:
-      - traefik_server_apps
-    labels:
-      - 'traefik.docker.network=traefik_server_apps'
-      - 'traefik.http.routers.traefik.rule=PathPrefix(`/traefik`)'
-      - 'traefik.http.routers.traefik.service=api@internal'
-      - 'traefik.http.middlewares.traefik.entrypoints=web'
 
   whoami:
     image: traefik/whoami
