@@ -1,23 +1,6 @@
-version: '3.5'
+version: '3.9'
 services:
-  # jellyfin:
-  #   image: jellyfin/jellyfin
-  #   container_name: jellyfin
-  #   hostname: jellyfin
-  #   user: uid:gid
-  #   network_mode: 'host'
-  #   volumes:
-  #     - ./jellyfin/config:/config
-  #     - ./jellyfin/cache:/cache
-  #     - type: bind
-  #       source: ./jellyfin/media
-  #       target: /media
-  #     - type: bind
-  #       source: ./jellyfin/media2
-  #       target: /media2
-  #       read_only: true
-  #   restart: 'unless-stopped'
-  
+
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
@@ -26,7 +9,6 @@ services:
       - "8053:53/tcp"
       - "8053:53/udp"
       - "8081:80/tcp"
-      #- "8067:67/udp" #Only required if you are using Pi-hole as your DHCP server
     environment:
       TZ: "America/Sao_Paulo"
       WEBPASSWORD: "02g04y24h22f50"
@@ -36,21 +18,27 @@ services:
     cap_add:
       - NET_ADMIN
     networks:
-      - apps-network
+      - traefik_server_apps
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.pihole.rule=Host(`pihole.home`)'
+      - 'traefik.docker.network=traefik_server_apps'
+      - 'traefik.http.routers.pihole.rule=PathPrefix(`/pihole/`)'
       - 'traefik.http.routers.pihole.entrypoints=web'
-      - 'traefik.http.middlewares.pihole.addprefix.prefix=/admin'
       - 'traefik.http.services.pihole.loadBalancer.server.port=80'
+      - 'traefik.http.middlewares.pihole.stripprefix.prefixes=/pihole'
+      # - 'traefik.http.middlewares.pihole.replacepathregex.regex=^/pihole/(.*)'
+      # - 'traefik.http.middlewares.pihole.replacepathregex.replacement=/admin/$$1'
+      - 'traefik.http.routers.pihole.middlewares=pihole'
     restart: unless-stopped
-  
+
   traefik:
     image: "traefik:v2.11"
     container_name: "traefik"
     command:
+      - "--log.level=DEBUG"
+      - "--api.debug=true"
       - "--providers.docker=true"
-      - "--providers.docker.network=apps-network"
+      - "--providers.docker.network=traefik_server_apps"
       - "--entrypoints.web.address=:80"
       - "--api.insecure=true"
       - '--providers.docker.exposedbydefault=false'
@@ -62,13 +50,23 @@ services:
     depends_on:
       - pihole
     networks:
-      - apps-network
+      - traefik_server_apps
     labels:
-      - 'traefik.docker.network=apps-network' 
-      - 'traefik.http.routers.traefik.rule=Host(`traefik.rpi.home`)'
+      - 'traefik.docker.network=traefik_server_apps'
+      - 'traefik.http.routers.traefik.rule=PathPrefix(`/traefik`)'
       - 'traefik.http.routers.traefik.service=api@internal'
       - 'traefik.http.middlewares.traefik.entrypoints=web'
 
+  whoami:
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_server_apps"
+      - "traefik.http.routers.whoami.rule=PathPrefix(`/whoami`)"
+      - "traefik.http.services.whoami.loadBalancer.server.port=80"
+    networks:
+      - traefik_server_apps
+
 networks:
-  apps-network:
-    driver: bridge
+  traefik_server_apps:
+    external: true
