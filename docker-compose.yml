@@ -11,7 +11,7 @@ services:
       - "--api.insecure=true"
       - '--providers.docker.exposedbydefault=false'
     ports:
-      - "8081:80"
+      - "80:80"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
@@ -33,7 +33,7 @@ services:
       - "53:53/tcp"
       - "53:53/udp"
       - "67:67/udp"
-      - "80:80/tcp"
+      # - "8081:80/tcp"
     env_file:
       - './pihole/.env'
     volumes:
