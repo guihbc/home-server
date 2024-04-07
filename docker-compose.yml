@@ -21,6 +21,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     depends_on:
       - pihole
+      - nextcloud
     networks:
       - traefik_server_apps
     labels:
@@ -63,6 +64,41 @@ services:
       - 'traefik.tcp.services.pihole_tcp.loadBalancer.server.port=53'
     restart: unless-stopped
 
+  mysql:
+    image: mysql:8.3
+    container_name: nextcloud_mysql
+    restart: unless-stopped
+    env_file:
+      - './nextcloud/mysql/.env'
+    volumes:
+      - ./nextcloud/mysql/db:/var/lib/mysql
+    networks:
+      - nextcloud_db
+
+  nextcloud:
+    image: nextcloud:26
+    container_name: nextcloud_app
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    depends_on:
+      - mysql
+    env_file:
+      - './nextcloud/.env'
+    volumes:
+      - ./nextcloud/data:/var/www/html
+    networks:
+      - traefik_server_apps
+      - nextcloud_db
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik_server_apps'
+      - 'traefik.http.routers.nextcloud.rule=PathPrefix(`/nextcloud`)'
+      - 'traefik.http.routers.nextcloud.entrypoints=web'
+      - 'traefik.http.services.nextcloud.loadBalancer.server.port=80'
+      - 'traefik.http.middlewares.nextcloud.stripprefix.prefixes=/nextcloud'
+      - 'traefik.http.routers.nextcloud.middlewares=nextcloud'
+
   whoami:
     image: traefik/whoami
     labels:
@@ -76,3 +112,5 @@ services:
 networks:
   traefik_server_apps:
     external: true
+  nextcloud_db:
+    external: false

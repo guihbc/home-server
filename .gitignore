@@ -1,3 +1,5 @@
 pihole/etc-pihole/
 pihole/etc-dnsmasq.d/
+nextcloud/data/
+nextcloud/mysql/db/
 .env
