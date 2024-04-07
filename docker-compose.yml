@@ -8,27 +8,33 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.network=traefik_server_apps"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.websecure.address=:443"
       - "--api.insecure=true"
       - '--providers.docker.exposedbydefault=false'
       - "--entrypoints.dns_udp.address=:53/udp"
       - "--entrypoints.dns_tcp.address=:53/tcp"
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
       - "53:53/udp"
       - "53:53/tcp"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./traefik/certs:/etc/certs:ro
     depends_on:
       - pihole
       - nextcloud
+      - jellyfin
     networks:
       - traefik_server_apps
     labels:
       - 'traefik.docker.network=traefik_server_apps'
       - 'traefik.http.routers.traefik.rule=PathPrefix(`/traefik`)'
       - 'traefik.http.routers.traefik.service=api@internal'
-      - 'traefik.http.middlewares.traefik.entrypoints=web'
+      - 'traefik.http.middlewares.traefik.entrypoints=websecure'
+      - 'traefik.http.routers.traefik.tls=true'
 
   pihole:
     image: pihole/pihole:latest
@@ -47,21 +53,24 @@ services:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik_server_apps'
       
-      # Configs para o tráfego HTTP na porta 80 (Página admin do pihole)
+      # Configs para o tráfego HTTP na porta 443 (Página admin do pihole)
       - 'traefik.http.routers.pihole.rule=PathPrefix(`/pihole`)'
-      - 'traefik.http.routers.pihole.entrypoints=web'
+      - 'traefik.http.routers.pihole.entrypoints=websecure'
       - 'traefik.http.services.pihole.loadBalancer.server.port=80'
       - 'traefik.http.middlewares.pihole.stripprefix.prefixes=/pihole'
       - 'traefik.http.routers.pihole.middlewares=pihole'
+      - "traefik.http.routers.pihole.tls=true"
 
       # Configs para o tráfego UDP na porta 53 (DNS)
       - 'traefik.udp.routers.pihole_udp.entrypoints=dns_udp'
       - 'traefik.udp.services.pihole_udp.loadBalancer.server.port=53'
+      - "traefik.http.routers.pihole_udp.tls=true"
 
       # Configs para o tráfego TCP na porta 53 (DNS)
       - 'traefik.tcp.routers.pihole_tcp.rule=HostSNI(`*`)'
       - 'traefik.tcp.routers.pihole_tcp.entrypoints=dns_tcp'
       - 'traefik.tcp.services.pihole_tcp.loadBalancer.server.port=53'
+      - "traefik.http.routers.pihole_tcp.tls=true"
     restart: unless-stopped
 
   mysql:
@@ -94,20 +103,34 @@ services:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik_server_apps'
       - 'traefik.http.routers.nextcloud.rule=PathPrefix(`/nextcloud`)'
-      - 'traefik.http.routers.nextcloud.entrypoints=web'
+      - 'traefik.http.routers.nextcloud.entrypoints=websecure'
       - 'traefik.http.services.nextcloud.loadBalancer.server.port=80'
       - 'traefik.http.middlewares.nextcloud.stripprefix.prefixes=/nextcloud'
       - 'traefik.http.routers.nextcloud.middlewares=nextcloud'
+      - "traefik.http.routers.nextcloud.tls=true"
 
-  whoami:
-    image: traefik/whoami
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik_server_apps"
-      - "traefik.http.routers.whoami.rule=PathPrefix(`/whoami`)"
-      - "traefik.http.services.whoami.loadBalancer.server.port=80"
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin_server_app
+    volumes:
+      - './jellyfin/config:/config'
+      - './jellyfin/series:/tv'
+      - './jellyfin/movies:/movies'
+      - './jellyfin/music:/music'
+    environment:
+      - TZ=America/Sao_Paulo
+    restart: unless-stopped
     networks:
       - traefik_server_apps
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik_server_apps'
+      - 'traefik.http.routers.jellyfin.rule=PathPrefix(`/jellyfin`)'
+      - 'traefik.http.routers.jellyfin.entrypoints=websecure'
+      - 'traefik.http.services.jellyfin.loadBalancer.server.port=8096'
+      - 'traefik.http.middlewares.jellyfin.stripprefix.prefixes=/jellyfin'
+      - 'traefik.http.routers.jellyfin.middlewares=jellyfin'
+      - "traefik.http.routers.jellyfin.tls=true"
 
 networks:
   traefik_server_apps:
