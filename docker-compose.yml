@@ -27,6 +27,7 @@ services:
       - pihole
       - nextcloud
       - jellyfin
+      - jupyter
     networks:
       - traefik_server_apps
     labels:
@@ -52,25 +53,25 @@ services:
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=traefik_server_apps'
-      
+
       # Configs para o tráfego HTTP na porta 443 (Página admin do pihole)
       - 'traefik.http.routers.pihole.rule=PathPrefix(`/pihole`)'
       - 'traefik.http.routers.pihole.entrypoints=websecure'
       - 'traefik.http.services.pihole.loadBalancer.server.port=80'
       - 'traefik.http.middlewares.pihole.stripprefix.prefixes=/pihole'
       - 'traefik.http.routers.pihole.middlewares=pihole'
-      - "traefik.http.routers.pihole.tls=true"
+      - 'traefik.http.routers.pihole.tls=true'
 
       # Configs para o tráfego UDP na porta 53 (DNS)
       - 'traefik.udp.routers.pihole_udp.entrypoints=dns_udp'
       - 'traefik.udp.services.pihole_udp.loadBalancer.server.port=53'
-      - "traefik.http.routers.pihole_udp.tls=true"
+      - 'traefik.http.routers.pihole_udp.tls=true'
 
       # Configs para o tráfego TCP na porta 53 (DNS)
       - 'traefik.tcp.routers.pihole_tcp.rule=HostSNI(`*`)'
       - 'traefik.tcp.routers.pihole_tcp.entrypoints=dns_tcp'
       - 'traefik.tcp.services.pihole_tcp.loadBalancer.server.port=53'
-      - "traefik.http.routers.pihole_tcp.tls=true"
+      - 'traefik.http.routers.pihole_tcp.tls=true'
     restart: unless-stopped
 
   mysql:
@@ -107,7 +108,7 @@ services:
       - 'traefik.http.services.nextcloud.loadBalancer.server.port=80'
       - 'traefik.http.middlewares.nextcloud.stripprefix.prefixes=/nextcloud'
       - 'traefik.http.routers.nextcloud.middlewares=nextcloud'
-      - "traefik.http.routers.nextcloud.tls=true"
+      - 'traefik.http.routers.nextcloud.tls=true'
 
   jellyfin:
     image: jellyfin/jellyfin
@@ -130,7 +131,29 @@ services:
       - 'traefik.http.services.jellyfin.loadBalancer.server.port=8096'
       - 'traefik.http.middlewares.jellyfin.stripprefix.prefixes=/jellyfin'
       - 'traefik.http.routers.jellyfin.middlewares=jellyfin'
-      - "traefik.http.routers.jellyfin.tls=true"
+      - 'traefik.http.routers.jellyfin.tls=true'
+
+  jupyter:
+    image: quay.io/jupyter/scipy-notebook
+    container_name: jupyter_server_app
+    restart: unless-stopped
+    environment:
+      JUPYTERHUB_SERVICE_PREFIX: /jupyter/
+    command:
+      - jupyter-lab
+      - --ip=*
+      - --NotebookApp.token=
+      - --NotebookApp.password=
+      - --NotebookApp.base_url=/jupyter
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik_server_apps'
+      - 'traefik.http.routers.jupyter.rule=PathPrefix(`/jupyter`)'
+      - 'traefik.http.routers.jupyter.entrypoints=websecure'
+      - 'traefik.http.services.jupyter.loadBalancer.server.port=8888'
+      - 'traefik.http.routers.jupyter.tls=true'
+    networks:
+      - traefik_server_apps
 
 networks:
   traefik_server_apps:
