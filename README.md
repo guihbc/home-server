@@ -18,10 +18,28 @@ mkcert -install
 mkcert -cert-file traefik/certs/local-cert.pem -key-file traefik/certs/local-key.pem "<your_server_local_ip_address>"
 ```
 
-### Running the project in your server
+## Configuring Nextcloud
+
+To the Nextcloud works with a reverse proxy you need to change the parameter [overwritewebroot](https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/config_sample_php_parameters.html#overwritewebroot)
+to do that you need to go into the docker volume folder
+
+```shell
+docker compose up nextcloud #just to create the volume folders
+docker compose stop nextcloud
+sudo nano nextcloud/data/config/config.php
+```
+
+And change/insert the parameter `overwritewebroot` as `/nextcloud` following the documentation
+
+```php
+'overwritewebroot' => '/nextcloud'
+```
+
+## Running the project in your server
+
+Add the `.env` files with the respective environment variables values
 
 ```shell
 sudo chmod +x ./run.sh
 ./run.sh
 ```
-
