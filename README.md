@@ -43,3 +43,18 @@ Add the `.env` files with the respective environment variables values
 sudo chmod +x ./run.sh
 ./run.sh
 ```
+
+## How it looks like
+
+Pihole
+![Captura de tela 2024-04-21 193734](https://github.com/guihbc/home-server/assets/112268375/0b4e50c9-6cbe-4023-b005-afeddc0087f5)
+
+Nextcloud
+![Captura de tela 2024-04-21 193923](https://github.com/guihbc/home-server/assets/112268375/c9c8200b-6902-4a09-807f-691dd4bcecc3)
+
+Jellyfin
+![Captura de tela 2024-04-21 194014](https://github.com/guihbc/home-server/assets/112268375/c576a8e8-ab91-4abb-89cf-9aa4352e0aed)
+
+Jupyter
+![Captura de tela 2024-04-21 194105](https://github.com/guihbc/home-server/assets/112268375/d3a0d514-7e1f-41d2-b0c3-ae2e77fb61ca)
+
