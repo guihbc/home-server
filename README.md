@@ -58,3 +58,5 @@ Jellyfin
 Jupyter
 ![Captura de tela 2024-04-21 194105](https://github.com/guihbc/home-server/assets/112268375/d3a0d514-7e1f-41d2-b0c3-ae2e77fb61ca)
 
+Traefik dashboard
+![Captura de tela 2024-04-21 194746](https://github.com/guihbc/home-server/assets/112268375/46494ffd-5a33-4370-a51b-aa0163be00ad)
